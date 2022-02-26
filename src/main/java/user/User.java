@@ -160,7 +160,10 @@ public class User {
         boolean isOwner = false;
         for (int i = 0; i < getAllCards().size(); i++)
         {
-            if (getAllCards().get(i).getCardId().equalsIgnoreCase(cardToCheck))
+            System.out.println("CARD 1: " + getAllCards().get(i).getCardId());
+            System.out.println("CARD 2: " + cardToCheck);
+            System.out.println(getAllCards().get(i).getCardId().equals(cardToCheck));
+            if (getAllCards().get(i).getCardId().equals(cardToCheck))
             {
                 isOwner = true;
                 break;

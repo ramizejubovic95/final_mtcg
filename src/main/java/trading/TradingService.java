@@ -9,17 +9,17 @@ import java.sql.SQLException;
 @NoArgsConstructor
 public class TradingService
 {
-    public boolean tradeCards(String cardOnMarketPlace, String offerFromRequester) throws SQLException
+    public boolean tradeCards(Card seller, Card buyer) throws SQLException
     {
-        DbManagement db = new DbManagement();
-        Card cardOfSeller = db.getCardsByCardId(cardOnMarketPlace);
-        Card cardOfBuyer = db.getCardsByCardId(offerFromRequester);
 
-
-        boolean meetsRequirementsOfSeller = checkIfCardMeetsRequirements(cardOfSeller, cardOfBuyer);
+        boolean meetsRequirementsOfSeller = checkIfCardMeetsRequirements(seller, buyer);
         if (!meetsRequirementsOfSeller) return false;
 
-        db.switchOwnerOfCard(cardOfSeller, cardOfBuyer);
+        System.out.println("SELLER: " + seller.getUserid());
+        System.out.println("BUYER: " + buyer.getUserid());
+
+        DbManagement db = new DbManagement();
+        db.switchOwnerOfCard(seller, buyer);
 
         return true;
     }

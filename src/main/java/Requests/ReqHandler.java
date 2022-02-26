@@ -1,6 +1,7 @@
 package Requests;
 
 import PackageMackage.PackageManager;
+import battle.Battle;
 import card.Card;
 import card.CardManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,18 +20,22 @@ import java.io.OutputStreamWriter;
 import java.util.*;
 
 import java.sql.SQLException;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 
 public class ReqHandler
 {
     ObjectMapper oMap = new ObjectMapper();
-    DbManagement db = new DbManagement();
+    DbManagement db;
     ResponseHandler response;
     User user1 = null;
+    private static BlockingQueue<User> blockingQueue = new ArrayBlockingQueue<>(10);
 
     public ReqHandler(ResponseHandler response)
     {
         this.response = response;
+        this.db = new DbManagement(this.response);
     }
 
     public boolean doesRequestContainAuthToken(Request req)
@@ -154,7 +159,11 @@ public class ReqHandler
                 }
                 if ("/users/kienboec".equals(req.getRoute()))
                 {
-                    if (!isAuthMatchingRoute(req)) break;
+                    if (!isAuthMatchingRoute(req))
+                    {
+                        this.response.reply("NOT AUTHORIZED!");
+                        break;
+                    }
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     this.response.reply("HERE SHOULD BE USER DATA PRINTED OF " + user1.getUsername());
@@ -162,7 +171,12 @@ public class ReqHandler
                 }
                 if ("/users/altenhof".equals(req.getRoute()))
                 {
-                    if (!isAuthMatchingRoute(req)) break;
+                    if (!isAuthMatchingRoute(req))
+                    {
+                        this.response.reply("NOT AUTHORIZED!");
+                        break;
+                    }
+
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     this.response.reply("HERE SHOULD BE USER DATA PRINTED OF " + user1.getUsername());
@@ -255,6 +269,7 @@ public class ReqHandler
                     }
 
                     db.storeCards(someCards);
+                    this.response.reply("New Cards are added to the shop by Admin");
                 }
                 if ("/transactions/packages".equals(req.getRoute()))
                 {
@@ -264,17 +279,65 @@ public class ReqHandler
                         this.response.reply("NOT ENOUGH COINS BROKE FELLA");
                     else
                     {
+                        User userToCheckIfAllCardsSizeChanged = new User();
+                        userToCheckIfAllCardsSizeChanged.setAllCards(user1.getAllCards());
+                        System.out.println(userToCheckIfAllCardsSizeChanged.getAllCards().size());
+
                         user1 = db.buyPacks(user1);
                         user1.setGems(user1.getGems() - 5);
                         user1.setBestCardsFromStackToDeck();
-                        this.response.reply(" " + user1.getAuthToken() + " Add All Cards Showing");
+                        db.saveLastUserData(user1);
+                        user1 = db.getCardsByUserId(user1);
+                        System.out.println("OTHER USER DECK SSITE : " + userToCheckIfAllCardsSizeChanged.getAllCards().size());
+                        System.out.println("ACTUAL DECK SIZE : " + user1.getAllCards().size() + " \n\n\n");
 
+                        this.response.reply(" " + user1.getAuthToken() + " Add All Cards Showing");
                     }
                 }
                 if ("/battles".equals(req.getRoute()))
                 {
-                    System.out.println(req.getContent());
-                    System.out.println("TODO\n");
+                    if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
+
+                    if (blockingQueue.contains(user1))
+                    {
+                        this.response.reply("YOU ARE ALREADY WAITING FOR A FIGHT!");
+                        break;
+                    }
+
+                    blockingQueue.add(user1);
+                    boolean isReadyToFight = blockingQueue.toArray().length == 2;
+
+                    if (isReadyToFight)
+                    {
+                        try
+                        {
+                            User fighter1 = blockingQueue.take();
+                            User fighter2 = blockingQueue.take();
+
+                            Battle battle = new Battle(fighter1, fighter2, this.response);
+                            battle = db.createBattle(battle);
+
+                            if (battle.getFighter1() != 0 && battle.getFighter2() != 0)
+                            {
+                                System.out.println("LETS FIGHT WITH BATTLE ID: " + battle.getBattleId());
+                                battle = battle.fight(fighter1, fighter2);
+                                db.saveBattleData(battle);
+                            }
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+
+                    }
+                    else
+                    {
+                        this.response.reply("You are the first one in the room. Please wait for the battle!");
+                    }
                 }
                 if ("/tradings".equals(req.getRoute()))
                 {
@@ -312,6 +375,11 @@ public class ReqHandler
 
                     // Check ob user besitzer der karte ist
                     Tradeable tradeToCheck = db.getTradeableByTradeId(requestedTradeId);
+                    if (tradeToCheck == null)
+                    {
+                        this.response.reply("TRADE DOES NOT EXIST!");
+                        break;
+                    }
                     if (tradeToCheck.getCurrentUserId() == user1.getId())
                     {
                         this.response.reply("YOU CANNOT TRADE WITH YOURSELF");
@@ -319,17 +387,26 @@ public class ReqHandler
                     }
 
                     TradingService marketplace = new TradingService();
-                    String cardOfferFromRequester = req.getContent().replaceAll("\"", "");
+                    String cardOfferFromRequester = req.getContent().replaceAll("\"", "").replaceAll("\r", "").replaceAll("\n", "");
 
                     boolean cardCanBeTraded = user1.isUserOwnerOfCard(cardOfferFromRequester);
+
                     if (cardCanBeTraded)
                     {
-                        if (marketplace.tradeCards(requestedTradeId, cardOfferFromRequester))
+                        Card seller = db.getCardsByCardId(tradeToCheck.getCardIdOfTradeable());
+                        Card buyer = db.getCardsByCardId(cardOfferFromRequester);
+
+
+                        if (marketplace.tradeCards(seller, buyer))
                         {
                             this.response.reply("Trade was successfull");
+                            break;
+                        }
+                        else
+                        {
+                            this.response.reply("Requirements are not met");
                         }
                     }
-
                     else
                     {
                         this.response.reply("Trade not possible");
@@ -348,6 +425,7 @@ public class ReqHandler
 
                     if (result.length < 4)
                     {
+                        System.out.println("Not enough cards choosen to put in deck");
                         this.response.reply("Not enough cards choosen to put in deck");
                         break;
                     }
@@ -373,6 +451,7 @@ public class ReqHandler
 
                     if (!isNewDeckValid)
                     {
+                        System.out.println(("You do not own some of these cards"));
                         this.response.reply("You do not own some of these cards");
                         break;
                     }
@@ -380,22 +459,33 @@ public class ReqHandler
                     user1.setDeck(newDeck);
                     db.storeCurrentDeckToDb(user1);
                     user1.printDeck();
+                    this.response.reply("YOUR DECK IS SET TO FIGHT!");
                 }
                 if ("/users/kienboec".equals(req.getRoute()))
                 {
-                    if (!isAuthMatchingRoute(req)) break;
+                    if (!isAuthMatchingRoute(req))
+                    {
+                        this.response.reply("NOT AUTHORIZED!");
+                        break;
+                    }
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     user1 = updateCurrentUser(req);
                     db.saveLastUserData(user1);
+                    this.response.reply("USER DATA UPDATED!");
                 }
                 if ("/users/altenhof".equals(req.getRoute()))
                 {
-                    if (!isAuthMatchingRoute(req)) break;
+                    if (!isAuthMatchingRoute(req))
+                    {
+                        this.response.reply("NOT AUTHORIZED!");
+                        break;
+                    }
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     user1 = updateCurrentUser(req);
                     db.saveLastUserData(user1);
+                    this.response.reply("USER DATA UPDATED!");
                 }
             }
             case "DELETE" -> {

@@ -1,23 +1,28 @@
 package dbManagement;
 
 import PackageMackage.PackageManager;
+import battle.Battle;
 import card.Card;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import response.ResponseHandler;
 import trading.Tradeable;
 import user.User;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-@NoArgsConstructor
-@Getter
 public class DbManagement {
     private final String dbInfo = "jdbc:postgresql://localhost:5432/postgres";
     private final String dbName = "ramiz";
     private final String dbPassword = "password";
+    private ResponseHandler response;
     private Connection c = null;
+
+    public DbManagement(){}
+
+    public DbManagement(ResponseHandler response)
+    {
+        this.response = response;
+    }
 
     public void open() throws SQLException
     {
@@ -80,10 +85,10 @@ public class DbManagement {
             pstmt.setInt(12, 0);
 
             pstmt.executeUpdate();
-
+            this.close();
         }
-        catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return false; }
-        catch (Exception ex) { System.out.println("User could not be saved to DB\n"); return false; }
+        catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { System.out.println("User could not be saved to DB\n"); this.close(); return false; }
 
         this.close();
         System.out.println("User added to DB\n");
@@ -186,11 +191,13 @@ public class DbManagement {
 
                 pstmt.executeUpdate();
                 System.out.println("SUCCESSFULLY ADDED: " + cards.get(i).getCardName());
+                this.close();
             }
-            catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return false; }
-            catch (Exception ex) { System.out.println("Last Card could not be saved to DB\n"); return false; }
-        }
+            catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());this.close(); return false; }
+            catch (Exception ex) { System.out.println("Last Card could not be saved to DB\n");this.close(); return false; }
 
+            this.close();
+        }
         this.close();
         return true;
     }
@@ -215,6 +222,7 @@ public class DbManagement {
                 if(result.next())
                 {
                     newPackage.setId(result.getInt("id"));
+                    this.close();
                     return newPackage;
                 }
                 else
@@ -224,8 +232,8 @@ public class DbManagement {
                 }
             }
         }
-        catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return null; }
-        catch (Exception ex) { System.out.println("create Packs: Package could not be saved to DB\n"); return null; }
+        catch (SQLException e) { System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());this.close(); return null; }
+        catch (Exception ex) { System.out.println("create Packs: Package could not be saved to DB\n"); this.close(); return null; }
     }
 
     public User buyPacks(User user) throws SQLException
@@ -233,7 +241,6 @@ public class DbManagement {
         String SQL = "SELECT * FROM PACKAGES WHERE isbought = ? LIMIT 1";
         ResultSet result = null;
         User currentUser = user;
-
 
         this.open();
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
@@ -244,24 +251,23 @@ public class DbManagement {
             {
                 PackageManager packageManager = new PackageManager();
                 packageManager.setId(result.getInt("id"));
-                packWasBought(packageManager.getId());
+                setPackToBought(packageManager.getId());
                 currentUser = getCardsByPackageId(currentUser, packageManager.getId());
 
             }
             else
             {
-                System.out.println("No more packs to buy!\n");
-
                 // Give User gems back
                 currentUser.setGems(currentUser.getGems() + 5);
             }
+            this.close();
             return currentUser;
         }
         catch (SQLException e) { System.err.format("buyPacks SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
         catch (Exception ex) { System.out.println("buy Packs Package could not be saved to DB\n"); this.close(); return user; }
     }
 
-    public void packWasBought(int id) throws SQLException
+    public void setPackToBought(int id) throws SQLException
     {
         String SQL = "UPDATE PACKAGES SET isbought = ? WHERE id = ?";
         this.open();
@@ -274,10 +280,11 @@ public class DbManagement {
             int rows = pstmt.executeUpdate();
             if(rows == 0)
                 throw new Exception();
-
+            this.close();
         }
-        catch (SQLException e) { System.err.format("packWasBought SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.err.println("Package could not be bought to DB\n"); }
+        catch (SQLException e) { System.err.format("packWasBought SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close();}
+        catch (Exception ex) { System.err.println("Package could not be bought to DB\n");this.close(); }
+        this.close();
     }
 
     public User getCardsByPackageId(User user, int packageId) throws SQLException
@@ -301,21 +308,19 @@ public class DbManagement {
                 newCard.setDamage(result.getFloat("damage"));
                 newCard.setElement(result.getString("element"));
                 newCard.setCardType(result.getString("cardtype"));
-                newCard.setCardType(result.getString("cardtype"));
-                newCard.setCardType(result.getString("cardtype"));
-
+                newCard.setLocked(result.getBoolean("islocked"));
                 newCard.setPackageId(packageId);
                 newCard.setUserid(currentUser.getId());
 
                 setUserIdToCardToMarkOwnership(currentUser.getId(), newCard.getId());
-                currentUser = getCardsByUserId(currentUser);
             }
-
+            currentUser = getCardsByUserId(currentUser);
+            this.close();
             // System.out.println("NICE PACKAGE YOU GOT THERE!\n");
             return currentUser;
         }
         catch (SQLException e) { System.err.format("getCardsByPackageId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
-        catch (Exception ex) { System.out.println("getCardsFrom PAck Package could not be saved to DB\n"); this.close(); return user; }
+        catch (Exception ex) { System.out.println("getCardsByPackageId PAck Package could not be saved to DB\n"); this.close(); return user; }
     }
 
     public void setUserIdToCardToMarkOwnership(int userId, int cardId) throws SQLException
@@ -333,9 +338,11 @@ public class DbManagement {
             if(rows == 0)
                 throw new Exception();
 
+            this.close();
         }
-        catch (SQLException e) { System.err.format("setUserIdToCardToMarkOwnership SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.err.println("markCardOwner : Package could not be bought\n"); }
+        catch (SQLException e) { System.err.format("setUserIdToCardToMarkOwnership SQL State: %s\n%s", e.getSQLState(), e.getMessage());this.close(); }
+        catch (Exception ex) { System.err.println("setUserIdToCardToMarkOwnership : Package could not be bought\n");this.close(); }
+        this.close();
     }
 
     public User getCardsByUserId(User user) throws SQLException
@@ -349,6 +356,7 @@ public class DbManagement {
         {
             pstmt.setInt(1, user.getId());
             result = pstmt.executeQuery();
+            List<Card> newStack = new ArrayList<Card>();
 
             while (result.next())
             {
@@ -362,15 +370,17 @@ public class DbManagement {
                 newCard.setPackageId(result.getInt("packageid"));
                 newCard.setUserid(result.getInt("userid"));
 
-                currentUser.getAllCards().add(newCard);
+                newStack.add(newCard);
+
             }
 
+            currentUser.setAllCards(newStack);
             currentUser.setBestCardsFromStackToDeck();
-            // System.out.println("NICE PACKAGE YOU GOT THERE!\n");
+            this.close();
             return currentUser;
         }
-        catch (SQLException e) { System.err.format("getCardsFrom SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
-        catch (Exception ex) { System.out.println("getCardsFrom PAck Package could not be saved to DB\n"); this.close(); return user; }
+        catch (SQLException e) { System.err.format("getCardsByUserId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
+        catch (Exception ex) { System.out.println("getCardsByUserId\n"); this.close(); return user; }
     }
 
     public void storeCurrentDeckToDb(User user) throws SQLException
@@ -390,10 +400,11 @@ public class DbManagement {
             int rows = pstmt.executeUpdate();
             if(rows == 0)
                 throw new Exception();
-
+            this.close();
         }
-        catch (SQLException e) { System.err.format("KOMMT DAS VON HIER? SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.out.println("Deck could not be saved to DB\n"); }
+        catch (SQLException e) { System.err.format("KOMMT DAS VON HIER? SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
+        catch (Exception ex) { System.out.println("Deck could not be saved to DB\n"); this.close();}
+        this.close();
     }
 
     public void deletePreviousDeckFromDb(User user) throws SQLException
@@ -466,10 +477,11 @@ public class DbManagement {
 
             if (rows == 1)
                 System.out.println("User saved successfully!");
+            this.close();
 
         }
-        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); }
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close();}
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close();}
     }
 
     public User getUserByToken(String token) throws SQLException
@@ -541,9 +553,8 @@ public class DbManagement {
             this.close();
             return updatedList;
         }
-        catch (SQLException e) { System.err.format("UPDATE TRADINGHISTORY SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return null; }
-        catch (Exception ex) { System.err.println("UPDATE TRADINGHISTORY : Package could not be bought\n"); return null; }
-
+        catch (SQLException e) { System.err.format("UPDATE TRADINGHISTORY SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return null; }
+        catch (Exception ex) { System.err.println("UPDATE TRADINGHISTORY : Package could not be bought\n"); this.close(); return null; }
     }
 
     public List<User> updateScoreBoard() throws SQLException
@@ -596,6 +607,7 @@ public class DbManagement {
         }
         catch (SQLException e) { System.err.format("SaveNewTrade SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
         catch (Exception ex) { System.out.println("Deck could not be saved to DB\n"); this.close(); }
+        this.close();
     }
 
     public String getCardIdByTradeId(String requestedTradeId) throws SQLException
@@ -616,9 +628,8 @@ public class DbManagement {
             this.close();
             return null;
         }
-        catch (SQLException e) { System.err.format("getCardIdByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return null; }
-        catch (Exception ex) { System.err.println("getCardIdByTradeId : Package could not be bought\n"); return null; }
-
+        catch (SQLException e) { System.err.format("getCardIdByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return null; }
+        catch (Exception ex) { System.err.println("getCardIdByTradeId : Package could not be bought\n"); this.close(); return null; }
     }
 
     public Tradeable getTradeableByTradeId(String requestedTradeId) throws SQLException
@@ -631,6 +642,7 @@ public class DbManagement {
         {
             pstmt.setString(1, requestedTradeId);
             result = pstmt.executeQuery();
+            System.out.println(requestedTradeId);
             if (result.next())
             {
                 Tradeable trade = setTradeableFromDbToInstance(result);
@@ -652,14 +664,15 @@ public class DbManagement {
 
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
+            unlockCard(getTradeableByTradeId(requestedTradeId).getCardIdOfTradeable());
             pstmt.setString(1, requestedTradeId);
             pstmt.executeUpdate();
-            unlockCard(getTradeableByTradeId(requestedTradeId).getCardIdOfTradeable());
             System.out.println("Trade deleted successfully");
             this.close();
         }
-        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage());  }
-        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId : Package could not be bought\n"); }
+        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
+        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId \n");this.close(); }
+        this.close();
     }
 
     public void setCardToLocked(String cardIdOfTradeable) throws SQLException
@@ -702,9 +715,11 @@ public class DbManagement {
             if (rows == 1)
                 System.out.println("Card is locked!");
 
+            this.close();
+
         }
-        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); }
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close();}
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close();}
 
     }
 
@@ -742,8 +757,8 @@ public class DbManagement {
                 return null;
             }
         }
-        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return null; }
-        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); return null; }
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return null; }
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n");this.close(); return null; }
     }
 
     public boolean switchOwnerOfCard(Card cardOfSeller, Card cardOfBuyer) throws SQLException
@@ -766,10 +781,12 @@ public class DbManagement {
             if (rows == 1)
                 System.out.println("Card 1 was traded!");
 
+            this.close();
         }
-        catch (SQLException e) { System.err.format("switchOwnerOfCard SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return false; }
-        catch (Exception ex) { System.err.println("switchOwnerOfCard : Package could not be bought\n");  return false; }
+        catch (SQLException e) { System.err.format("switchOwnerOfCard1 SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { System.err.println("switchOwnerOfCard : Package could not be bought\n"); this.close(); return false; }
 
+        this.open();
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
             pstmt.setInt(1, zwischenSpeicher.getUserid());
@@ -779,18 +796,16 @@ public class DbManagement {
             int rows = pstmt.executeUpdate();
             if(rows == 0)
                 throw new Exception();
-
             if (rows == 1)
                 System.out.println("Card2 is traded!");
 
             unlockCard(cardOfSeller.getCardId());
             deleteTradeFromDbByCardId(cardOfSeller.getCardId());
+            this.close();
             return true;
         }
-        catch (SQLException e) { System.err.format("switchOwnerOfCard SQL State: %s\n%s", e.getSQLState(), e.getMessage()); return false;}
-        catch (Exception ex) { System.err.println("switchOwnerOfCard : Package could not be bought\n"); return false;}
-
-
+        catch (SQLException e) { System.err.format("switchOwnerOfCard2 SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false;}
+        catch (Exception ex) { System.err.println("switchOwnerOfCard : Package could not be bought\n"); this.close(); return false;}
     }
 
     public void deleteTradeFromDbByCardId(String cardid) throws SQLException
@@ -805,7 +820,126 @@ public class DbManagement {
             System.out.println("Trade deleted successfully");
             this.close();
         }
-        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage());  }
-        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId : Package could not be bought\n"); }
+        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
+        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId : Package could not be bought\n"); this.close();}
+    }
+
+    public Battle setBattleDataFromDbtoInstance(ResultSet result) throws SQLException
+    {
+        Battle foundBattle = new Battle();
+
+        foundBattle.setBattleId(result.getInt("battleid"));
+        foundBattle.setFighter1(result.getInt("fighterone"));
+        foundBattle.setFighter2(result.getInt("fightertwo"));
+        foundBattle.setWinner(result.getInt("winner"));
+        foundBattle.setLoser(result.getInt("loser"));
+        foundBattle.setDraws(result.getBoolean("draws"));
+
+        return foundBattle;
+    }
+
+    public Battle searchForBattle() throws SQLException
+    {
+        String SQL = "SELECT * FROM BATTLES WHERE fighterone = ? OR fightertwo = ? LIMIT 1";
+        ResultSet result;
+        Battle foundBattle = null;
+
+        this.open();
+
+        try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
+        {
+            pstmt.setInt(1,0);
+            pstmt.setInt(2,0);
+
+            result = pstmt.executeQuery();
+
+            if (result.next())
+            {
+                foundBattle = setBattleDataFromDbtoInstance(result);
+                this.close();
+                return foundBattle;
+            }
+            else
+            {
+                this.close();
+                return foundBattle;
+            }
+        }
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage());this.close(); return null; }
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n");this.close(); return null; }
+    }
+
+    public Battle createBattle(Battle battle) throws Exception
+    {
+        String SQL = "INSERT INTO BATTLES(fighterone, fightertwo, winner, loser, draws, isfinished)" + "VALUES(?, ?, ?, ?, ?, ?)";
+        Battle newBattle = battle;
+
+        this.open();
+        try (PreparedStatement pstmt = this.c.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS))
+        {
+            pstmt.setInt(1, battle.getFighter1());
+            pstmt.setInt(2, battle.getFighter2());
+            pstmt.setInt(3, 0);
+            pstmt.setInt(4, 0);
+            pstmt.setBoolean(5, false);
+            pstmt.setBoolean(6, false);
+
+            int rows = pstmt.executeUpdate();
+
+            if (rows == 0)
+                throw new Exception();
+
+            try (ResultSet result = pstmt.getGeneratedKeys())
+            {
+                if (result.next())
+                {
+                    newBattle.setBattleId(result.getInt("battleid"));
+                    this.close();
+                    return newBattle;
+                }
+                else
+                {
+                    this.close();
+                    return newBattle;
+                }
+
+            }
+            catch (Exception e)
+            {
+                System.out.println("SOME PROBLEMS");
+                this.close();
+                return battle;
+            }
+        }
+    }
+
+    public void saveBattleData(Battle battle) throws SQLException
+    {
+        String SQL = "UPDATE BATTLES SET fighterone = ?, fightertwo = ?, winner = ?, loser = ?, draws = ?, isfinished = ? WHERE battleid = ?";
+
+        this.open();
+        try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
+        {
+            pstmt.setInt(1, battle.getFighter1());
+            pstmt.setInt(2, battle.getFighter2());
+            pstmt.setInt(3, battle.getWinner());
+            pstmt.setInt(4, battle.getLoser());
+            pstmt.setBoolean(5, battle.isDraws());
+            pstmt.setBoolean(6, battle.isFinished());
+            pstmt.setInt(7, battle.getBattleId());
+
+            int rows = pstmt.executeUpdate();
+            if(rows == 0)
+                throw new SQLException();
+
+            if (rows == 1)
+            {
+                this.response.reply("LETS FIIIIIIIGHT!");
+            }
+
+            this.close();
+        }
+        catch (SQLException e) { System.err.format("saveBattleData SQL State: %s\n%s", e.getSQLState(), e.getMessage());  this.close(); }
+        catch (Exception ex) { System.err.println("saveBattleData :\n" + ex.getStackTrace()); this.close();}
     }
 }

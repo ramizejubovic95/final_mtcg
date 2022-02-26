@@ -15,9 +15,9 @@ public class Main
 
     public static void main(String args[]) throws IOException
     {
-        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
-        try (ServerSocket AnotherServerSocket = new ServerSocket(10001, 5))
+        try (ServerSocket AnotherServerSocket = new ServerSocket(10001, 10))
         {
             while (true)
             {

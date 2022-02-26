@@ -90,7 +90,7 @@ public class SocketHandler extends Thread
 
             try
             {
-                this.request.print();
+                // this.request.print();
                 this.reqHandler.handle(this.request);
                 return;
             }
@@ -112,7 +112,7 @@ public class SocketHandler extends Thread
             {
                 this.in.close();
                 this.out.close();
-                System.out.println("CONNECTION CLOSED???");
+                // System.out.println("CONNECTION CLOSED???");
                 this.clientConnection.close();
             }
             catch (IOException e) {

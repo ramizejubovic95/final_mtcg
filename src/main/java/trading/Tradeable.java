@@ -26,4 +26,6 @@ public class Tradeable
     private int originUserId;
     private String originUserAuthToken;
 
+    private boolean isTraded;
+
 }

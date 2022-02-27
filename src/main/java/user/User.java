@@ -95,12 +95,15 @@ public class User {
 
     public void setBestCardsFromStackToDeck()
     {
-        if (deck.size() == 4) deck.clear();
+        if (deck.size() == 5) deck.clear();
 
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; getDeck().size() < 4; i++)
         {
             if (this.getAllCards().get(i).isLocked())
+            {
                 continue;
+            }
+
 
             deck.add(this.getAllCards().get(i));
         }
@@ -149,10 +152,20 @@ public class User {
         }
     }
 
-    public void updateTradingsHistory() throws SQLException
+    public boolean updateTradingsHistory() throws SQLException
     {
         DbManagement db = new DbManagement();
-        this.setTradings(db.updateTradingsHistory(this));
+        List<Tradeable> newHistory = db.updateTradingsHistory(this);
+
+        if (newHistory == null)
+        {
+            return false;
+        }
+        else
+        {
+            this.setTradings(newHistory);
+            return true;
+        }
     }
 
     public boolean isUserOwnerOfCard(String cardToCheck)
@@ -160,9 +173,6 @@ public class User {
         boolean isOwner = false;
         for (int i = 0; i < getAllCards().size(); i++)
         {
-            System.out.println("CARD 1: " + getAllCards().get(i).getCardId());
-            System.out.println("CARD 2: " + cardToCheck);
-            System.out.println(getAllCards().get(i).getCardId().equals(cardToCheck));
             if (getAllCards().get(i).getCardId().equals(cardToCheck))
             {
                 isOwner = true;
@@ -178,7 +188,7 @@ public class User {
 
         for (int i = 0; i < getDeck().size(); i++)
         {
-            if (getDeck().get(i).getCardId().equals(cardid))
+            if (getAllCards().get(i).getCardId().equals(cardid))
             {
                 isCardInDeck = true;
                 break;
@@ -193,7 +203,7 @@ public class User {
 
         for (int i = 0; i < getDeck().size(); i++)
         {
-            if (getDeck().get(i).getCardId().equals(cardid) && getDeck().get(i).isLocked())
+            if (getAllCards().get(i).getCardId().equals(cardid) && getAllCards().get(i).isLocked())
             {
                 isCardLocked = true;
                 break;

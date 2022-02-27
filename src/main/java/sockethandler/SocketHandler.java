@@ -5,28 +5,25 @@ import Requests.Request;
 import response.ResponseHandler;
 
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.SQLException;
 
 public class SocketHandler extends Thread
 {
     private final Socket clientConnection;
-    private final ResponseHandler responseHandler;
-    private ReqHandler reqHandler = null;
+    private final ReqHandler reqHandler;
     // ServerSocket serverSocket = new ServerSocket(10001);
     Request request;
     int counter;
-    private BufferedReader in = null;
-    private BufferedWriter out = null;
+    private final BufferedReader in;
+    private final BufferedWriter out;
 
 
     public SocketHandler(Socket clientConnection) throws IOException {
         this.clientConnection = clientConnection;
         this.in = new BufferedReader(new InputStreamReader(this.clientConnection.getInputStream()));
         this.out = new BufferedWriter(new OutputStreamWriter(this.clientConnection.getOutputStream()));
-        this.responseHandler = new ResponseHandler(this.out);
-        this.reqHandler = new ReqHandler(this.responseHandler);
+        ResponseHandler responseHandler = new ResponseHandler(this.out);
+        this.reqHandler = new ReqHandler(responseHandler);
         this.request = new Request();
     }
 

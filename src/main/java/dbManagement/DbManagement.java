@@ -8,6 +8,7 @@ import trading.Tradeable;
 import user.User;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DbManagement {
@@ -118,11 +119,15 @@ public class DbManagement {
             }
             throw new SQLException();
         }
-        catch (SQLException throwables) { this.close(); return null; }
+        catch (SQLException throwables) { this.close(); return null; } catch (Exception e) {
+            e.printStackTrace();
+            this.close();
+            return null;
+        }
 
     }
 
-    public User login(User user) throws SQLException
+    public User login(User user) throws Exception
     {
         User currentUser;
         if (!checkIfUserExist(user)) return null;
@@ -345,18 +350,19 @@ public class DbManagement {
         this.close();
     }
 
-    public User getCardsByUserId(User user) throws SQLException
+    public User getCardsByUserId(User user) throws Exception
     {
         String SQL = "SELECT * FROM CARDS WHERE userid = ? ORDER BY damage DESC";
         ResultSet result = null;
         User currentUser = user;
         this.open();
+        List<Card> newStack = new ArrayList<Card>();
+
 
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
             pstmt.setInt(1, user.getId());
             result = pstmt.executeQuery();
-            List<Card> newStack = new ArrayList<Card>();
 
             while (result.next())
             {
@@ -369,14 +375,15 @@ public class DbManagement {
                 newCard.setCardType(result.getString("cardtype"));
                 newCard.setPackageId(result.getInt("packageid"));
                 newCard.setUserid(result.getInt("userid"));
+                newCard.setLocked(result.getBoolean("islocked"));
 
                 newStack.add(newCard);
 
             }
 
+            this.close();
             currentUser.setAllCards(newStack);
             currentUser.setBestCardsFromStackToDeck();
-            this.close();
             return currentUser;
         }
         catch (SQLException e) { System.err.format("getCardsByUserId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
@@ -484,17 +491,18 @@ public class DbManagement {
         catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close();}
     }
 
-    public User getUserByToken(String token) throws SQLException
+    public User getUserByToken(String token) throws Exception
     {
         String SQL = "SELECT * FROM USERS WHERE authtoken = ?";
         ResultSet result = null;
-        User user = new User();
+        User user = null;
 
         this.open();
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
             pstmt.setString(1, token);
             result = pstmt.executeQuery();
+
             if (result.next())
             {
                 user = setUserDataComingFormDbToInstance(result);
@@ -504,14 +512,15 @@ public class DbManagement {
             }
             else
             {
-                throw new SQLException();
+                this.close();
+                return null;
             }
         }
         catch (SQLException throwables)
         {
             System.out.println("INVALID AUTHTOKEN\n");
             this.close();
-            return null;
+            return user;
         }
     }
 
@@ -528,6 +537,7 @@ public class DbManagement {
         tradeable.setOriginUserId(result.getInt("originuserid"));
         tradeable.setOriginUserAuthToken(result.getString("originauthtoken"));
         tradeable.setTradeId(result.getString("tradeid"));
+        tradeable.setTraded(result.getBoolean("istraded"));
 
         return tradeable;
     }
@@ -544,6 +554,11 @@ public class DbManagement {
 
             pstmt.setInt(1, user.getId());
             result = pstmt.executeQuery();
+            if (!result.next())
+            {
+                this.close();
+                return null;
+            }
             while (result.next())
             {
                 System.out.println(user.getId());
@@ -585,7 +600,7 @@ public class DbManagement {
 
     public void saveNewTrade(Tradeable newTrade) throws SQLException
     {
-        String SQL = "INSERT INTO TRADINGS(cardid, cardtype, currentuserid, currentuserauthtoken, originuserid, originauthtoken, tradeid, damage)" + "VALUES(?,?,?,?,?,?,?,?)";
+        String SQL = "INSERT INTO TRADINGS(cardid, cardtype, currentuserid, currentuserauthtoken, originuserid, originauthtoken, tradeid, damage, istraded)" + "VALUES(?,?,?,?,?,?,?,?, ?)";
 
         this.open();
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
@@ -598,6 +613,7 @@ public class DbManagement {
             pstmt.setString(6, newTrade.getOriginUserAuthToken());
             pstmt.setString(7, newTrade.getTradeId());
             pstmt.setFloat(8, newTrade.getDamageOfTradeable());
+            pstmt.setBoolean(9, false);
 
             int rows = pstmt.executeUpdate();
             if(rows == 0)
@@ -657,25 +673,26 @@ public class DbManagement {
 
     }
 
-    public void deleteTradeFromDbByTradeId(String requestedTradeId) throws SQLException
+    public boolean updateTradeFromDbByTradeId(String requestedTradeId) throws SQLException
     {
-        String SQL = "DELETE FROM TRADINGS WHERE tradeid = ?";
+        String SQL = "UPDATE TRADINGS SET istraded = ? WHERE tradeid = ?";
         this.open();
 
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
             unlockCard(getTradeableByTradeId(requestedTradeId).getCardIdOfTradeable());
-            pstmt.setString(1, requestedTradeId);
+            pstmt.setBoolean(1, true);
+            pstmt.setString(2, requestedTradeId);
             pstmt.executeUpdate();
             System.out.println("Trade deleted successfully");
             this.close();
+            return true;
         }
-        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
-        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId \n");this.close(); }
-        this.close();
+        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId \n");this.close(); return false; }
     }
 
-    public void setCardToLocked(String cardIdOfTradeable) throws SQLException
+    public boolean setCardToLocked(String cardIdOfTradeable) throws SQLException
     {
         String SQL = "UPDATE CARDS SET islocked = ? WHERE cardid = ?";
 
@@ -686,19 +703,19 @@ public class DbManagement {
             pstmt.setString(2, cardIdOfTradeable);
 
             int rows = pstmt.executeUpdate();
-            if(rows == 0)
-                throw new Exception();
 
-            if (rows == 1)
-                System.out.println("Card is locked!");
-
+            if (rows == 0)
+            {
+                return false;
+            }
+            System.out.println("Card is locked!");
+            return true;
         }
-        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); }
-        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); }
-
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close(); return false; }
     }
 
-    public void unlockCard(String cardid) throws SQLException
+    public boolean unlockCard(String cardid) throws SQLException
     {
         String SQL = "UPDATE CARDS SET islocked = ? WHERE cardid = ?";
 
@@ -710,17 +727,18 @@ public class DbManagement {
 
             int rows = pstmt.executeUpdate();
             if(rows == 0)
-                throw new Exception();
+                return false;
 
             if (rows == 1)
+            {
                 System.out.println("Card is locked!");
-
+                return true;
+            }
             this.close();
-
+            return true;
         }
-        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close();}
-        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close();}
-
+        catch (SQLException e) { System.err.format("SAVELASTUSERDATA SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { System.err.println("SAVELASTUSERDATA : Package could not be bought\n"); this.close(); return false; }
     }
 
     public Card getCardsByCardId(String cardId) throws SQLException
@@ -800,7 +818,7 @@ public class DbManagement {
                 System.out.println("Card2 is traded!");
 
             unlockCard(cardOfSeller.getCardId());
-            deleteTradeFromDbByCardId(cardOfSeller.getCardId());
+            updateTradeFromDbByCardId(cardOfSeller);
             this.close();
             return true;
         }
@@ -808,20 +826,31 @@ public class DbManagement {
         catch (Exception ex) { System.err.println("switchOwnerOfCard : Package could not be bought\n"); this.close(); return false;}
     }
 
-    public void deleteTradeFromDbByCardId(String cardid) throws SQLException
+    public boolean updateTradeFromDbByCardId(Card card) throws SQLException
     {
-        String SQL = "DELETE FROM TRADINGS WHERE cardid = ?";
+        String SQL = "UPDATE TRADINGS SET istraded = ?, currentuserid = ? WHERE cardid = ?";
         this.open();
 
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
-            pstmt.setString(1, cardid);
-            pstmt.executeUpdate();
-            System.out.println("Trade deleted successfully");
+            pstmt.setBoolean(1, true);
+            pstmt.setInt(2, card.getUserid());
+            pstmt.setString(3, card.getCardId());
+            int rows = pstmt.executeUpdate();
+
+            System.out.println("ROWS: " + rows);
+            if (rows == 0)
+            {
+                this.close();
+                return false;
+            }
+
+            System.out.println("Trade updated successfully");
             this.close();
+            return true;
         }
-        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); }
-        catch (Exception ex) { System.err.println("deleteTradeFromDbByTradeId : Package could not be bought\n"); this.close();}
+        catch (SQLException e) { System.err.format("deleteTradeFromDbByTradeId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return false; }
+        catch (Exception ex) { this.close(); return false; }
     }
 
     public Battle setBattleDataFromDbtoInstance(ResultSet result) throws SQLException
@@ -913,7 +942,7 @@ public class DbManagement {
         }
     }
 
-    public void saveBattleData(Battle battle) throws SQLException
+    public boolean saveBattleData(Battle battle) throws SQLException
     {
         String SQL = "UPDATE BATTLES SET fighterone = ?, fightertwo = ?, winner = ?, loser = ?, draws = ?, isfinished = ? WHERE battleid = ?";
 
@@ -930,16 +959,22 @@ public class DbManagement {
 
             int rows = pstmt.executeUpdate();
             if(rows == 0)
-                throw new SQLException();
+            {
+                this.close();
+                return false;
+            }
+
 
             if (rows == 1)
             {
-                this.response.reply("LETS FIIIIIIIGHT!");
+                this.close();
+                return true;
             }
 
             this.close();
+            return true;
         }
-        catch (SQLException e) { System.err.format("saveBattleData SQL State: %s\n%s", e.getSQLState(), e.getMessage());  this.close(); }
-        catch (Exception ex) { System.err.println("saveBattleData :\n" + ex.getStackTrace()); this.close();}
+        catch (SQLException e) { System.err.format("saveBattleData SQL State: %s\n%s", e.getSQLState(), e.getMessage());  this.close(); return false; }
+        catch (Exception ex) { System.err.println("saveBattleData :\n" + ex.getStackTrace()); this.close(); return false; }
     }
 }

@@ -10,13 +10,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import dbManagement.DbManagement;
 import response.ResponseHandler;
+import sockethandler.SocketHandler;
 import stats.Score;
 import trading.Tradeable;
 import trading.TradingService;
 import user.User;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
+import java.net.Socket;
 import java.util.*;
 
 import java.sql.SQLException;
@@ -38,11 +38,16 @@ public class ReqHandler
         this.db = new DbManagement(this.response);
     }
 
-    public boolean doesRequestContainAuthToken(Request req)
+    public ReqHandler()
     {
-        if (req.getAuthorization() == null)
+        this.db = new DbManagement();
+    }
+
+    public boolean doesRequestContainAuthToken(String authorization)
+    {
+        if (authorization == null)
         {
-            System.out.println("NO AUTHTOKEN.Connection refused");
+            System.out.println(("NO AUTHTOKEN.Connection refused"));
             return false;
         }
         return true;
@@ -53,11 +58,11 @@ public class ReqHandler
         return "admin-mtcgToken".equals(authToken);
     }
 
-    public User switchLoggedInUserToRequestingUser(Request req) throws SQLException
+    public User switchLoggedInUserToRequestingUser(Request req) throws Exception
     {
-        if (!doesRequestContainAuthToken(req))
+        if (!doesRequestContainAuthToken(req.getAuthorization()))
         {
-            this.response.reply("No Authtoken");
+            System.out.println("No Authtoken");
             return null;
         }
 
@@ -122,7 +127,7 @@ public class ReqHandler
         return user1;
     }
 
-    public boolean isAuthMatchingRoute(Request req) throws SQLException
+    public boolean isAuthMatchingRoute(Request req)
     {
         String[] splittedRouteStrings = req.getRoute().split("/users/");
         String getNameOutOfRoute = splittedRouteStrings[1];
@@ -132,8 +137,7 @@ public class ReqHandler
 
 
 
-    public void handle(Request req) throws SQLException, JsonProcessingException
-    {
+    public void handle(Request req) throws Exception {
         switch (req.getMethod()) {
             case "GET" -> {
                 if ("/cards".equals(req.getRoute()))
@@ -498,7 +502,7 @@ public class ReqHandler
 
                     if(!user1.isUserOwnerOfCard(db.getCardIdByTradeId(requestedTradeId))) break;
 
-                    db.deleteTradeFromDbByTradeId(requestedTradeId);
+                    db.updateTradeFromDbByTradeId(requestedTradeId);
                 }
             }
             default -> throw new IllegalStateException("Unexpected value: " + req.getMethod());

@@ -4,6 +4,7 @@ import card.Card;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dbManagement.DbManagement;
 import lombok.*;
+import response.ResponseHandler;
 import trading.Tradeable;
 
 import java.sql.SQLException;
@@ -71,24 +72,23 @@ public class User {
         }
     }
 
-    public void print()
+    public void print(ResponseHandler response)
     {
         int i = 0;
         if (this.getAllCards().size() == 0)
-            System.out.println("No Cards in Stack!\n");
+            response.reply("No Cards in Stack" + "\r\n");
         else
         {
-            System.out.println("MY STACK: \n");
+            response.reply("\r\n" + "My Stack" + "\r\n");
             for (i = 0; i < this.getAllCards().size(); i++)
             {
-                System.out.println("ID: " + this.getAllCards().get(i).getCardId());
-                System.out.println("NAME: " + this.getAllCards().get(i).getCardName());
-                System.out.println("TYPE: " + this.getAllCards().get(i).getCardType());
-                System.out.println("ELEMEENT: " + this.getAllCards().get(i).getElement());
-                System.out.println("DAMAGE: " + this.getAllCards().get(i).getDamage());
-                System.out.println("USERID: " + this.getAllCards().get(i).getUserid());
-                System.out.println("PKGID: " + this.getAllCards().get(i).getPackageId());
-                System.out.println("\n");
+                response.reply("\r\n" + "ID: " + this.getAllCards().get(i).getCardId() + "\r\n");
+                response.reply("NAME: " + this.getAllCards().get(i).getCardName() + "\r\n");
+                response.reply("TYPE: " + this.getAllCards().get(i).getCardType() + "\r\n");
+                response.reply("ELEMENT: " + this.getAllCards().get(i).getElement() + "\r\n");
+                response.reply("DAMAGE: " + this.getAllCards().get(i).getDamage() + "\r\n");
+                response.reply("USERID: " + this.getAllCards().get(i).getUserid() + "\r\n");
+                response.reply("PKGID: " + this.getAllCards().get(i).getPackageId() + "\r\n");
             }
         }
     }
@@ -103,51 +103,47 @@ public class User {
             {
                 continue;
             }
-
-
             deck.add(this.getAllCards().get(i));
         }
     }
 
-    public void userPrintsHimself()
+    public void userPrintsHimself(ResponseHandler response)
     {
-        System.out.println(this.getId());
-        System.out.println(this.getUsername());
-        System.out.println(this.getNameHandleOfUser());
-        System.out.println(this.getImage());
-        System.out.println(this.getBio());
-        System.out.println(this.getAuthToken());
-        System.out.println(this.getGems());
-        System.out.println(this.getEloPoints());
-        System.out.println("Number of Cards in current deck: " + this.getDeck().size());
-        System.out.println("You own " + this.getAllCards().size() + " cards");
+        response.reply("\r\n" + "ID: " + this.getId() + "\r\n");
+        response.reply("Username: " + this.getUsername() + "\r\n");
+        response.reply("Handle: " + this.getNameHandleOfUser() + "\r\n");
+        response.reply("Image: " + this.getImage()+ "\r\n");
+        response.reply( "Bio: " + this.getBio() + "\r\n");
+        response.reply( "Gems: " + this.getGems() + "\r\n");
+        response.reply( "Elopoints: " + this.getEloPoints() + "\r\n");
+        response.reply( "Number of Cards in current deck: " + this.getDeck().size() + "\r\n");
+        response.reply( "You own " + this.getAllCards().size() + " cards " + "\r\n");
     }
 
-    public void showStats()
+    public void showStats(ResponseHandler response)
     {
-        System.out.println("You fought " + this.getTotalBattles() + " Battles");
-        System.out.println("You won " + this.getWins() + " Battles");
-        System.out.println("You lost " + this.getLosses() + " Battles");
-        System.out.println("Do not know what happend here " + this.getLosses() + " Times");
+        response.reply("\r\n" + "You fought " + this.getTotalBattles() + " Battles" + "\r\n");
+        response.reply("You won " + this.getWins() + " Battles" + "\r\n");
+        response.reply("You lost " + this.getLosses() + " Battles" + "\r\n");
+        response.reply("Do not know what happend here " + this.getDraws() + " Times" + "\r\n");
     }
 
-    public void printTradingsHistory()
+    public void printTradingsHistory(ResponseHandler response)
     {
         int i = 0;
         if (this.getTradings().size() == 0)
-            System.out.println("No Tradings\n");
+            response.reply("\r\n" + "No Tradings" + "\r\n");
         else
         {
-            System.out.println("MY TRADINGS: \n");
+            response.reply("\r\n" + "MY TRADINGS: " + "\r\n");
             for (i = 0; i < this.getTradings().size(); i++)
             {
-                System.out.println("ID: " + this.getTradings().get(i).getTradeId());
-                System.out.println("CARD ID: " + this.getDeck().get(i).getCardId());
-                System.out.println("TYPE: " + this.getTradings().get(i).getCardTypeOfTradeable());
-                System.out.println("DAMAGE: " + this.getTradings().get(i).getDamageOfTradeable());
-                System.out.println("OWNER: " + this.getTradings().get(i).getCurrentUserId());
-                System.out.println("1. OWNER: " + this.getTradings().get(i).getOriginUserId());
-                System.out.println("\n");
+                response.reply("\r\n" + "ID: " + this.getTradings().get(i).getTradeId() + "\r\n");
+                response.reply("CARD ID: " + this.getDeck().get(i).getCardId() + "\r\n");
+                response.reply("TYPE: " + this.getTradings().get(i).getCardTypeOfTradeable() + "\r\n");
+                response.reply("DAMAGE: " + this.getTradings().get(i).getDamageOfTradeable() + "\r\n");
+                response.reply("OWNER: " + this.getTradings().get(i).getCurrentUserId() + "\r\n");
+                response.reply("1. OWNER: " + this.getTradings().get(i).getOriginUserId() + "\r\n");
             }
         }
     }
@@ -211,7 +207,6 @@ public class User {
         }
         return isCardLocked;
     }
-
 
 }
 

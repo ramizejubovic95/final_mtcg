@@ -4,6 +4,7 @@ import dbManagement.DbManagement;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import response.ResponseHandler;
 import user.User;
 
 import java.sql.SQLException;
@@ -23,11 +24,14 @@ public class Score
         this.setScoreBoard(db.updateScoreBoard());
     }
 
-    public void print()
+    public void print(ResponseHandler response)
     {
         for (int i = 0; i < this.getScoreBoard().size(); i++)
         {
-            System.out.println(i+1 + " place " + "-> " + this.getScoreBoard().get(i).getNameHandleOfUser() + " with " + this.getScoreBoard().get(i).getEloPoints());
+            if (i == 0)
+                response.reply("\r\n");
+
+            response.reply(i+1 + " place " + "-> " + this.getScoreBoard().get(i).getNameHandleOfUser() + " with " + this.getScoreBoard().get(i).getEloPoints() + "\r\n");
         }
     }
 }

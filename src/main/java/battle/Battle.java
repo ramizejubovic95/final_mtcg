@@ -40,18 +40,21 @@ public class Battle {
         System.out.println("THIS IS BATTLE ID: " + this.getBattleId());
         for (int i = 0; i < fighter1.getDeck().size(); i++)
         {
-            this.response.reply("CARDNAME FIGHTER1: " + fighter1.getDeck().get(i).getCardName());
-            this.response.reply("CARDNAME FIGHTER2: " + fighter2.getDeck().get(i).getCardName());
+            this.response.reply("CARDNAME FIGHTER1: " + fighter1.getDeck().get(i).getCardName() + "\r\n");
+            this.response.reply("CARDNAME FIGHTER2: " + fighter2.getDeck().get(i).getCardName() + "\r\n");
         }
 
         this.setWinner(fighter1.getId());
         this.setLoser(fighter2.getId());
         this.setFinished(true);
 
+        fighter1.setEloPoints(fighter1.getEloPoints() + 3);
         fighter1.setWins(fighter1.getWins() + 1);
         fighter1.setTotalBattles(fighter1.getTotalBattles() + 1);
+
+        fighter2.setEloPoints(fighter2.getEloPoints() -5);
         fighter2.setLosses(fighter1.getLosses() + 1);
-        fighter2.setTotalBattles(fighter1.getTotalBattles() + 1);
+        fighter2.setTotalBattles(fighter2.getTotalBattles() + 1);
 
         DbManagement db = new DbManagement();
         db.saveLastUserData(fighter1);

@@ -145,7 +145,7 @@ public class ReqHandler
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     this.response.reply(user1.getAuthToken());
-                    user1.print();
+                    user1.print(this.response);
                 }
                 if ("/deck".equals(req.getRoute()))
                 {
@@ -171,7 +171,7 @@ public class ReqHandler
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     this.response.reply("HERE SHOULD BE USER DATA PRINTED OF " + user1.getUsername());
-                    user1.userPrintsHimself();
+                    user1.userPrintsHimself(this.response);
                 }
                 if ("/users/altenhof".equals(req.getRoute()))
                 {
@@ -183,14 +183,13 @@ public class ReqHandler
 
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
-                    this.response.reply("HERE SHOULD BE USER DATA PRINTED OF " + user1.getUsername());
-                    user1.userPrintsHimself();
+                    user1.userPrintsHimself(this.response);
                 }
                 if ("/score".equals(req.getRoute()))
                 {
                     Score scoreBoard = new Score();
                     scoreBoard.updateScoreBoard();
-                    scoreBoard.print();
+                    scoreBoard.print(this.response);
 
                     this.response.reply("SCOREBOARD: " + scoreBoard.getScoreBoard().get(1).getAuthToken());
                 }
@@ -199,7 +198,7 @@ public class ReqHandler
                     if ((user1 = switchLoggedInUserToRequestingUser(req)) == null) break;
 
                     this.response.reply("PRINT STATS OF : " + user1.getWins());
-                    user1.showStats();
+                    user1.showStats(this.response);
                 }
                 if("/tradings".equals(req.getRoute()))
                 {
@@ -207,7 +206,7 @@ public class ReqHandler
 
                     user1.updateTradingsHistory();
                     this.response.reply("Tradings History FROM: " + user1.getUsername());
-                    user1.printTradingsHistory();
+                    user1.printTradingsHistory(this.response);
                 }
             }
             case "POST" -> {
@@ -363,6 +362,10 @@ public class ReqHandler
                         this.response.reply("Card is locked. It seems that it is already in the Marketplace");
                         break;
                     }
+                    if (user1.getId() == newTrade.getCurrentUserId())
+                    {
+                        this.response.reply("You cannot trade with yourself");
+                    }
 
                     db.saveNewTrade(newTrade);
                     db.setCardToLocked(newTrade.getCardIdOfTradeable());
@@ -401,7 +404,7 @@ public class ReqHandler
                         Card buyer = db.getCardsByCardId(cardOfferFromRequester);
 
 
-                        if (marketplace.tradeCards(seller, buyer))
+                        if (marketplace.tradeCards(seller, buyer, this.response))
                         {
                             this.response.reply("Trade was successfull");
                             break;

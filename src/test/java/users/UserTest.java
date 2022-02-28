@@ -9,7 +9,6 @@ import user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +22,15 @@ public class UserTest
     private Request req;
 
     @BeforeEach
-    public void setUp()
+    public void setUp() throws SQLException
     {
         this.db = new DbManagement();
         this.req = new Request();
+        this.user = new User();
+
+        this.db.setCardToLocked("951e886a-0fbf-425d-8df5-af2ee4830d85");
+        this.db.setCardToLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e");
+
     }
 
     @Test
@@ -49,6 +53,7 @@ public class UserTest
     public void isCardInDeckTest() throws Exception
     {
         this.user = this.db.getUserByToken("kienboec-mtcgToken");
+        this.user.printDeck();
 
         assertTrue(user.isCardInDeck("d04b736a-e874-4137-b191-638e0ff3b4e7"));
         assertFalse(user.isCardInDeck("dcd93250-25a7-4dca-85da-cad2789f7198"));
@@ -65,13 +70,11 @@ public class UserTest
     public void isCardLockedTest() throws Exception
     {
         this.user = this.db.getUserByToken("kienboec-mtcgToken");
-        this.user = this.db.getCardsByUserId(this.user);
 
         assertTrue(user.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
         assertFalse(user.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
 
         this.user = this.db.getUserByToken("altenhof-mtcgToken");
-        this.user = this.db.getCardsByUserId(this.user);
 
         assertFalse(user.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
         assertTrue(user.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
@@ -148,8 +151,10 @@ public class UserTest
 
 
     @AfterEach
-    public void destroy()
+    public void destroy() throws SQLException
     {
+        this.db.unlockCard("951e886a-0fbf-425d-8df5-af2ee4830d85");
+        this.db.unlockCard("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e");
         this.user = null;
         this.db = null;
         this.req.reset();

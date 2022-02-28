@@ -47,16 +47,19 @@ public class SocketHandler extends Thread
             {
                 input = this.in.readLine();
 
-                if (counter == 0) {
+                if (counter == 0)
+                {
                     String[] splittedInput = input.split(" ");
                     this.request.setMethod(splittedInput[0]);
                     this.request.setRoute(splittedInput[1]);
                 }
-                if (input.contains("Authorization")) {
+                if (input.contains("Authorization"))
+                {
                     String[] splittedInput = input.split(" ");
                     this.request.setAuthorization(splittedInput[2]);
                 }
-                if (input.contains("Content-Length")) {
+                if (input.contains("Content-Length"))
+                {
                     String[] splittedInput = input.split(" ");
                     try
                     {
@@ -70,9 +73,12 @@ public class SocketHandler extends Thread
                     int cLength = this.request.getContentLength();
                     if (cLength > 0) {
                         char[] cBuff = new char[cLength + 2];
-                        try {
+                        try
+                        {
                             this.in.read(cBuff, 0, cLength + 2);
-                        } catch (IOException e) {
+                        }
+                        catch (IOException e)
+                        {
                             e.printStackTrace();
                             break;
                         }
@@ -87,17 +93,13 @@ public class SocketHandler extends Thread
 
             try
             {
-                // this.request.print();
                 this.reqHandler.handle(this.request);
                 return;
             }
             catch (Exception e)
             {
                 e.printStackTrace();
-                System.out.println("REQUEST DID NOT WORK");
             }
-
-            // }
         }
         catch (Exception e)
         {
@@ -112,7 +114,8 @@ public class SocketHandler extends Thread
                 // System.out.println("CONNECTION CLOSED???");
                 this.clientConnection.close();
             }
-            catch (IOException e) {
+            catch (IOException e)
+            {
                 e.printStackTrace();
             }
         }

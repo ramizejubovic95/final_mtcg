@@ -108,6 +108,7 @@ public class ReqHandler
             newTrade.setOriginUserId(user1.getId());
             newTrade.setOriginUserAuthToken(user1.getAuthToken());
 
+            System.out.println("TRAAADEABBLEE: " + newTrade.getCurrentUserId());
             return newTrade;
         }
         catch (JsonMappingException e) { e.printStackTrace(); return null; }

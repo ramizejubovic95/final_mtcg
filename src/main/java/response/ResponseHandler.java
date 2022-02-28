@@ -10,6 +10,7 @@ public class ResponseHandler
 {
     private BufferedWriter out = null;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    public static final String LINE_END = "\r\n";
 
     public ResponseHandler(BufferedWriter out)
     {
@@ -22,7 +23,7 @@ public class ResponseHandler
         try
         {
             final String output = objectMapper.writeValueAsString(object);
-            out.write(output);
+            out.write(LINE_END+ output + LINE_END);
             out.flush();
         }
         catch (IOException e)

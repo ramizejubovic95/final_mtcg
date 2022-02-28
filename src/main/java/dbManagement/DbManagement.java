@@ -384,6 +384,7 @@ public class DbManagement {
             this.close();
             currentUser.setAllCards(newStack);
             currentUser.setBestCardsFromStackToDeck();
+            storeCurrentDeckToDb(currentUser);
             return currentUser;
         }
         catch (SQLException e) { System.err.format("getCardsByUserId SQL State: %s\n%s", e.getSQLState(), e.getMessage()); this.close(); return user; }
@@ -550,15 +551,11 @@ public class DbManagement {
         this.open();
         try (PreparedStatement pstmt = this.c.prepareStatement(SQL))
         {
-            List<Tradeable> updatedList = new ArrayList<Tradeable>();
+            List<Tradeable> updatedList = null;
 
             pstmt.setInt(1, user.getId());
             result = pstmt.executeQuery();
-            if (!result.next())
-            {
-                this.close();
-                return null;
-            }
+
             while (result.next())
             {
                 System.out.println(user.getId());

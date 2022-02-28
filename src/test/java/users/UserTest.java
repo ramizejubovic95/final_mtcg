@@ -17,16 +17,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class UserTest
 {
-    private User user;
+    private User userKienboec;
+    private User userAltenhofer;
     private DbManagement db;
-    private Request req;
+
 
     @BeforeEach
-    public void setUp() throws SQLException
+    public void setUp() throws Exception
     {
         this.db = new DbManagement();
-        this.req = new Request();
-        this.user = new User();
+
+        this.userKienboec = this.db.getUserByToken("kienboec-mtcgToken");
+        this.userAltenhofer = this.db.getUserByToken("altenhof-mtcgToken");
 
         this.db.setCardToLocked("951e886a-0fbf-425d-8df5-af2ee4830d85");
         this.db.setCardToLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e");
@@ -36,15 +38,11 @@ public class UserTest
     @Test
     public void isUserOwnerOfCardTest() throws Exception
     {
-        this.user = this.db.getUserByToken("kienboec-mtcgToken");
+        assertTrue(this.userKienboec.isUserOwnerOfCard("d04b736a-e874-4137-b191-638e0ff3b4e7"));
+        assertFalse(this.userKienboec.isUserOwnerOfCard("dcd93250-25a7-4dca-85da-cad2789f7198"));
 
-        assertTrue(user.isUserOwnerOfCard("d04b736a-e874-4137-b191-638e0ff3b4e7"));
-        assertFalse(user.isUserOwnerOfCard("dcd93250-25a7-4dca-85da-cad2789f7198"));
-
-        this.user = this.db.getUserByToken("altenhof-mtcgToken");
-
-        assertFalse(user.isUserOwnerOfCard("d04b736a-e874-4137-b191-638e0ff3b4e7"));
-        assertTrue(user.isUserOwnerOfCard("9e8238a4-8a7a-487f-9f7d-a8c97899eb48"));
+        assertFalse(this.userAltenhofer.isUserOwnerOfCard("d04b736a-e874-4137-b191-638e0ff3b4e7"));
+        assertTrue(this.userAltenhofer.isUserOwnerOfCard("9e8238a4-8a7a-487f-9f7d-a8c97899eb48"));
 
         assertNull(this.db.getUserByToken(""));
     }
@@ -52,16 +50,11 @@ public class UserTest
     @Test
     public void isCardInDeckTest() throws Exception
     {
-        this.user = this.db.getUserByToken("kienboec-mtcgToken");
-        this.user.printDeck();
+        assertTrue(this.userKienboec.isCardInDeck("d04b736a-e874-4137-b191-638e0ff3b4e7"));
+        assertFalse(this.userKienboec.isCardInDeck("9e8238a4-8a7a-487f-9f7d-a8c97899eb48"));
 
-        assertTrue(user.isCardInDeck("d04b736a-e874-4137-b191-638e0ff3b4e7"));
-        assertFalse(user.isCardInDeck("dcd93250-25a7-4dca-85da-cad2789f7198"));
-
-        this.user = this.db.getUserByToken("altenhof-mtcgToken");
-
-        assertFalse(user.isCardInDeck("d04b736a-e874-4137-b191-638e0ff3b4e7"));
-        assertTrue(user.isCardInDeck("9e8238a4-8a7a-487f-9f7d-a8c97899eb48"));
+        assertFalse(this.userAltenhofer.isCardInDeck("d04b736a-e874-4137-b191-638e0ff3b4e7"));
+        assertTrue(this.userAltenhofer.isCardInDeck("9e8238a4-8a7a-487f-9f7d-a8c97899eb48"));
 
         assertNull(this.db.getUserByToken(""));
     }
@@ -69,15 +62,11 @@ public class UserTest
     @Test
     public void isCardLockedTest() throws Exception
     {
-        this.user = this.db.getUserByToken("kienboec-mtcgToken");
+        assertTrue(this.userKienboec.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
+        assertFalse(this.userKienboec.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
 
-        assertTrue(user.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
-        assertFalse(user.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
-
-        this.user = this.db.getUserByToken("altenhof-mtcgToken");
-
-        assertFalse(user.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
-        assertTrue(user.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
+        assertFalse(this.userAltenhofer.isCardLocked("951e886a-0fbf-425d-8df5-af2ee4830d85"));
+        assertTrue(this.userAltenhofer.isCardLocked("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e"));
 
         assertNull(this.db.getUserByToken(""));
     }
@@ -85,17 +74,13 @@ public class UserTest
     @Test
     public void updateTradingHistoryTest() throws Exception
     {
-        this.user = this.db.getUserByToken("kienboec-mtcgToken");
-        assertTrue(this.user.updateTradingsHistory());
-
-        this.user = this.db.getUserByToken("altenhof-mtcgToken");
-        assertFalse(this.user.updateTradingsHistory());
+        assertTrue(this.userKienboec.updateTradingsHistory());
+        assertFalse(this.userAltenhofer.updateTradingsHistory());
     }
 
     @Test
     public void setBestCardsInDeckTest() throws Exception
     {
-        this.user = this.db.getUserByToken("kienboec-mtcgToken");
         List<Card> howItShouldLookLikeForUser1 = new ArrayList<Card>();
 
         Card card1 = new Card();
@@ -146,7 +131,7 @@ public class UserTest
         card4.setLocked(false);
         howItShouldLookLikeForUser1.add(card4);
 
-        assertEquals(howItShouldLookLikeForUser1.get(0).getCardId(), this.user.getDeck().get(0).getCardId());
+        assertEquals(howItShouldLookLikeForUser1.get(0).getCardId(), this.userKienboec.getDeck().get(0).getCardId());
     }
 
 
@@ -155,9 +140,9 @@ public class UserTest
     {
         this.db.unlockCard("951e886a-0fbf-425d-8df5-af2ee4830d85");
         this.db.unlockCard("44c82fbc-ef6d-44ab-8c7a-9fb19a0e7c6e");
-        this.user = null;
+        this.userKienboec = null;
+        this.userAltenhofer = null;
         this.db = null;
-        this.req.reset();
     }
 
 }

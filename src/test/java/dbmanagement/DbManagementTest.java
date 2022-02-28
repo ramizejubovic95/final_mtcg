@@ -28,10 +28,10 @@ public class DbManagementTest
         tradeable.setCardIdOfTradeable("111111111111111111");
         tradeable.setTradeId("00000000000000000000000");
         tradeable.setCardTypeOfTradeable("monster");
-        tradeable.setCurrentUserId(75);
+        tradeable.setCurrentUserId(99);
         tradeable.setCurrentUserAuthToken("kienboec-mtcgToken");
-        tradeable.setOriginUserId(75);
-        tradeable.setOriginUserAuthToken("kienboec-mtcgToken");
+        tradeable.setOriginUserId(100);
+        tradeable.setOriginUserAuthToken("altenhof-mtcgToken");
         tradeable.setDamageOfTradeable(33);
 
         this.db.saveNewTrade(this.tradeable);
@@ -45,8 +45,8 @@ public class DbManagementTest
         card.setElement("Water");
         card.setCardType("Monster");
         card.setCardId("1cb6ab86-bdb2-47e5-b6e4-68c5ab389334");
-        card.setPackageId(246);
-        card.setUserid(96);
+        card.setPackageId(255);
+        card.setUserid(99);
 
         this.battle = new Battle();
         battle.setFighter1(75);

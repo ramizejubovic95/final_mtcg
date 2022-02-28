@@ -17,6 +17,7 @@ import java.util.List;
 public class Score
 {
     private List<User> scoreBoard = new ArrayList<User>();
+    private String Linend = "\r\n";
 
     public void updateScoreBoard() throws SQLException
     {
@@ -31,7 +32,7 @@ public class Score
             if (i == 0)
                 response.reply("\r\n");
 
-            response.reply(i+1 + " place " + "-> " + this.getScoreBoard().get(i).getNameHandleOfUser() + " with " + this.getScoreBoard().get(i).getEloPoints() + "\r\n");
+            response.reply(i+1 + " place " + "-> " + this.getScoreBoard().get(i).getNameHandleOfUser() + " with " + this.getScoreBoard().get(i).getEloPoints());
         }
     }
 }

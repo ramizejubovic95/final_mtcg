@@ -79,16 +79,16 @@ public class User {
             response.reply("No Cards in Stack" + "\r\n");
         else
         {
-            response.reply("\r\n" + "My Stack" + "\r\n");
+            response.reply( "My Stack" + "\r\n");
             for (i = 0; i < this.getAllCards().size(); i++)
             {
-                response.reply("\r\n" + "ID: " + this.getAllCards().get(i).getCardId() + "\r\n");
-                response.reply("NAME: " + this.getAllCards().get(i).getCardName() + "\r\n");
-                response.reply("TYPE: " + this.getAllCards().get(i).getCardType() + "\r\n");
-                response.reply("ELEMENT: " + this.getAllCards().get(i).getElement() + "\r\n");
-                response.reply("DAMAGE: " + this.getAllCards().get(i).getDamage() + "\r\n");
-                response.reply("USERID: " + this.getAllCards().get(i).getUserid() + "\r\n");
-                response.reply("PKGID: " + this.getAllCards().get(i).getPackageId() + "\r\n");
+                response.reply("ID: " + this.getAllCards().get(i).getCardId());
+                response.reply("NAME: " + this.getAllCards().get(i).getCardName());
+                response.reply("TYPE: " + this.getAllCards().get(i).getCardType());
+                response.reply("ELEMENT: " + this.getAllCards().get(i).getElement());
+                response.reply("DAMAGE: " + this.getAllCards().get(i).getDamage());
+                response.reply("USERID: " + this.getAllCards().get(i).getUserid());
+                response.reply("PKGID: " + this.getAllCards().get(i).getPackageId());
             }
         }
     }
@@ -109,41 +109,41 @@ public class User {
 
     public void userPrintsHimself(ResponseHandler response)
     {
-        response.reply("\r\n" + "ID: " + this.getId() + "\r\n");
-        response.reply("Username: " + this.getUsername() + "\r\n");
-        response.reply("Handle: " + this.getNameHandleOfUser() + "\r\n");
-        response.reply("Image: " + this.getImage()+ "\r\n");
-        response.reply( "Bio: " + this.getBio() + "\r\n");
-        response.reply( "Gems: " + this.getGems() + "\r\n");
-        response.reply( "Elopoints: " + this.getEloPoints() + "\r\n");
-        response.reply( "Number of Cards in current deck: " + this.getDeck().size() + "\r\n");
-        response.reply( "You own " + this.getAllCards().size() + " cards " + "\r\n");
+        response.reply("ID: " + this.getId());
+        response.reply("Username: " + this.getUsername());
+        response.reply("Handle: " + this.getNameHandleOfUser());
+        response.reply("Image: " + this.getImage());
+        response.reply( "Bio: " + this.getBio());
+        response.reply( "Gems: " + this.getGems());
+        response.reply( "Elopoints: " + this.getEloPoints());
+        response.reply( "Number of Cards in current deck: " + this.getDeck().size());
+        response.reply( "You own " + this.getAllCards().size() + " cards ");
     }
 
     public void showStats(ResponseHandler response)
     {
-        response.reply("\r\n" + "You fought " + this.getTotalBattles() + " Battles" + "\r\n");
-        response.reply("You won " + this.getWins() + " Battles" + "\r\n");
-        response.reply("You lost " + this.getLosses() + " Battles" + "\r\n");
-        response.reply("Do not know what happend here " + this.getDraws() + " Times" + "\r\n");
+        response.reply("You fought " + this.getTotalBattles() + " Battles");
+        response.reply("You won " + this.getWins() + " Battles");
+        response.reply("You lost " + this.getLosses() + " Battles");
+        response.reply("Do not know what happend here " + this.getDraws() + " Times");
     }
 
     public void printTradingsHistory(ResponseHandler response)
     {
         int i = 0;
         if (this.getTradings().size() == 0)
-            response.reply("\r\n" + "No Tradings" + "\r\n");
+            response.reply("No Tradings");
         else
         {
-            response.reply("\r\n" + "MY TRADINGS: " + "\r\n");
+            response.reply("MY TRADINGS: ");
             for (i = 0; i < this.getTradings().size(); i++)
             {
-                response.reply("\r\n" + "ID: " + this.getTradings().get(i).getTradeId() + "\r\n");
-                response.reply("CARD ID: " + this.getDeck().get(i).getCardId() + "\r\n");
-                response.reply("TYPE: " + this.getTradings().get(i).getCardTypeOfTradeable() + "\r\n");
-                response.reply("DAMAGE: " + this.getTradings().get(i).getDamageOfTradeable() + "\r\n");
-                response.reply("OWNER: " + this.getTradings().get(i).getCurrentUserId() + "\r\n");
-                response.reply("1. OWNER: " + this.getTradings().get(i).getOriginUserId() + "\r\n");
+                response.reply("ID: " + this.getTradings().get(i).getTradeId());
+                response.reply("CARD ID: " + this.getDeck().get(i).getCardId());
+                response.reply("TYPE: " + this.getTradings().get(i).getCardTypeOfTradeable());
+                response.reply("DAMAGE: " + this.getTradings().get(i).getDamageOfTradeable());
+                response.reply("OWNER: " + this.getTradings().get(i).getCurrentUserId());
+                response.reply("1. OWNER: " + this.getTradings().get(i).getOriginUserId());
             }
         }
     }
